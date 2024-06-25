@@ -584,6 +584,9 @@ def uploadee(url):
     else:
         raise DirectDownloadLinkException("ERROR: Direct Link not found")
 
+class DirectDownloadLinkException(Exception):
+    pass
+
 async def get_formatted_size(size):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if size < 1024:
@@ -594,27 +597,28 @@ async def get_formatted_size(size):
 def replace_terabox_link(dlink):
     return re.sub(r'd\.(freeterabox\.com|terabox\.app)', 'd8.freeterabox.com', dlink)
     
-async def terabox(url, folderPath=None, details=None):
+def terabox(url, folderPath=None, details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
 
-    response_data = await fetch(f'https://pndz.000webhostapp.com/api.php?link={url}')
+    response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={url}')
+    response_data = response.json()
 
     if "list" not in response_data:
         return details
 
     contents = response_data["list"]
     for content in contents:
-        if 'isdir' in content and content['isdir'] in ['1', 1]:
+        if content['isdir'] in ['1', 1]:
             if not folderPath:
                 if not details['title']:
                     details['title'] = content['server_filename']
-                    newFolderPath = os.path.join(details['title'])
+                    newFolderPath = path.join(details['title'])
                 else:
-                    newFolderPath = os.path.join(details['title'], content['server_filename'])
+                    newFolderPath = path.join(details['title'], content['server_filename'])
             else:
-                newFolderPath = os.path.join(folderPath, content['server_filename'])
-            await terabox(content['path'], newFolderPath, details)
+                newFolderPath = path.join(folderPath, content['server_filename'])
+            terabox(content['path'], newFolderPath, details)
         else:
             if not folderPath:
                 if not details['title']:
@@ -623,7 +627,7 @@ async def terabox(url, folderPath=None, details=None):
             item = {
                 'url': replace_terabox_link(content['dlink']),  # Replace the dlink with modified URL
                 'filename': content['server_filename'],
-                'path': os.path.join(folderPath),
+                'path': path.join(folderPath),
             }
             if 'size' in content:
                 size = content["size"]
