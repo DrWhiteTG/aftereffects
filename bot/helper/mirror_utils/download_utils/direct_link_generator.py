@@ -573,8 +573,6 @@ def krakenfiles(url):
         raise DirectDownloadLinkException("ERROR: Unable to find download after post request")
     return _json['url']
 
-
-
 def uploadee(url):
     with create_scraper() as session:
         try:
@@ -585,9 +583,6 @@ def uploadee(url):
         return link[0]
     else:
         raise DirectDownloadLinkException("ERROR: Direct Link not found")
-
-class DirectDownloadLinkException(Exception):
-    pass
 
 async def get_formatted_size(size):
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
