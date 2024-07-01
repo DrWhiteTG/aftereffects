@@ -594,28 +594,26 @@ async def get_formatted_size(size):
         size /= 1024
     return f"{size:.2f} PB"
   
-def terabox(link):
+def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
 
-    response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={url}')
+    response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={link}')
     response_data = response.json()
 
     if "list" not in response_data:
-        return details
         print(details)
-        
+        return details
+
     contents = response_data["list"]
     for content in contents:
         if content['isdir'] in ['1', 1]:
             if not folderPath:
                 if not details['title']:
                     details['title'] = content['server_filename']
-                    newFolderPath = path.join(details['title'])
-                else:
-                    newFolderPath = path.join(details['title'], content['server_filename'])
+                newFolderPath = os.path.join(details['title'])
             else:
-                newFolderPath = path.join(folderPath, content['server_filename'])
+                newFolderPath = os.path.join(folderPath, content['server_filename'])
             terabox(content['path'], newFolderPath, details)
         else:
             if not folderPath:
@@ -623,9 +621,9 @@ def terabox(link):
                     details['title'] = content['server_filename']
                 folderPath = details['title']
             item = {
-                'url': content['fdlink'],  # Replace the dlink with modified URL
+                'url': content['fdlink'],  # Using fdlink instead of dlink
                 'filename': content['server_filename'],
-                'path': path.join(folderPath),
+                'path': os.path.join(folderPath),
             }
             if 'size' in content:
                 size = content["size"]
