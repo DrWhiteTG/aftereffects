@@ -603,6 +603,40 @@ def terabox(url, folderPath=None, details=None):
 
     if "list" not in response_data:
         return details
+        print(details)
+        
+    contents = response_data["list"]
+    for content in contents:
+        if content['isdir'] in ['1', 1]:
+            if not folderPath:
+                if not details['title']:
+                    details['title'] = content['server_filename']
+                    newFolderPath = path.join(details['title'])
+                else:
+                    newFolderPath = path.join(details['title'], content['server_filename'])
+            else:
+                newFolderPath = path.join(folderPath, content['server_filename'])
+            terabox(content['path'], newFolderPath, details)
+        else:
+            if not folderPath:
+                if not details['title']:
+                    details['title'] = content['server_filename']
+                folderPath = details['title']
+            item = {
+                'url': content['fdlink'],  # Replace the dlink with modified URL
+                'filename': content['server_filename'],
+                'path': path.join(folderPath),
+            }
+            if 'size' in content:
+                size = content["size"]
+                if isinstance(size, str) and size.isdigit():
+                    size = float(size)
+                details['total_size'] += size
+            details['contents'].append(item)
+    
+    if len(details['contents']) == 1:
+        return details['contents'][0]['url']
+    return details
 
 def gofile(url, auth):
     try:
