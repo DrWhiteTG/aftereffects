@@ -593,10 +593,7 @@ async def get_formatted_size(size):
             return f"{size:.2f} {unit}"
         size /= 1024
     return f"{size:.2f} PB"
-
-def replace_terabox_link(dlink):
-    return re.sub(r'd\.(freeterabox\.com|terabox\.app)', 'd8.freeterabox.com', dlink)
-    
+  
 def terabox(url, folderPath=None, details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
@@ -606,39 +603,6 @@ def terabox(url, folderPath=None, details=None):
 
     if "list" not in response_data:
         return details
-
-    contents = response_data["list"]
-    for content in contents:
-        if content['isdir'] in ['1', 1]:
-            if not folderPath:
-                if not details['title']:
-                    details['title'] = content['server_filename']
-                    newFolderPath = path.join(details['title'])
-                else:
-                    newFolderPath = path.join(details['title'], content['server_filename'])
-            else:
-                newFolderPath = path.join(folderPath, content['server_filename'])
-            terabox(content['path'], newFolderPath, details)
-        else:
-            if not folderPath:
-                if not details['title']:
-                    details['title'] = content['server_filename']
-                folderPath = details['title']
-            item = {
-                'url': replace_terabox_link(content['dlink']),  # Replace the dlink with modified URL
-                'filename': content['server_filename'],
-                'path': path.join(folderPath),
-            }
-            if 'size' in content:
-                size = content["size"]
-                if isinstance(size, str) and size.isdigit():
-                    size = float(size)
-                details['total_size'] += size
-            details['contents'].append(item)
-    
-    if len(details['contents']) == 1:
-        return details['contents'][0]['url']
-    return details
 
 def gofile(url, auth):
     try:
