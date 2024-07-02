@@ -598,7 +598,7 @@ def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
 
-    response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={link}')
+    response = requests.get(f'https://d-2-ee229a15793e.herokuapp.com/api.php?link={link}')
     response_data = response.json()
 
     if "list" not in response_data:
@@ -607,31 +607,25 @@ def terabox(link, folderPath='', details=None):
 
     contents = response_data["list"]
     for content in contents:
-        if content['isdir'] in ['1', 1]:
-            if not folderPath:
-                if not details['title']:
-                    details['title'] = content['server_filename']
-                newFolderPath = os.path.join(details['title'])
-            else:
-                newFolderPath = os.path.join(folderPath, content['server_filename'])
-            terabox(content['path'], newFolderPath, details)
+        if not folderPath:
+            if not details['title']:
+                details['title'] = content['fileName']
+            folderPath = os.path.join(details['title'])
         else:
-            if not folderPath:
-                if not details['title']:
-                    details['title'] = content['server_filename']
-                folderPath = details['title']
-            item = {
-                'url': content['fdlink'],  # Using fdlink instead of dlink
-                'filename': content['server_filename'],
-                'path': os.path.join(folderPath),
-            }
-            if 'size' in content:
-                size = content["size"]
-                if isinstance(size, str) and size.isdigit():
-                    size = float(size)
-                details['total_size'] += size
-            details['contents'].append(item)
-    
+            folderPath = os.path.join(folderPath, content['fileName'])
+            
+        item = {
+            'url': content['fastDownloadLink'],
+            'filename': content['fileName'],
+            'path': folderPath,
+        }
+        if 'size' in content:
+            size = content["fileSize"]
+            if isinstance(size, str) and size.isdigit():
+                size = float(size)
+            details['total_size'] += size
+        details['contents'].append(item)
+
     if len(details['contents']) == 1:
         return details['contents'][0]['url']
     return details
