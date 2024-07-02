@@ -599,29 +599,45 @@ def terabox(link, folderPath='', details=None):
         details = {'title': '', 'total_size': 0, 'contents': []}
 
     response = requests.get(f'https://d-2-ee229a15793e.herokuapp.com/api.php?link={link}')
-    response_data = response.json()
+    
+    try:
+        response_data = response.json()
+    except ValueError:
+        print("Error decoding JSON")
+        return details
+    
+    print("API Response:", response_data)  # Debug: print the full API response
 
-    if "list" not in response_data:
+    if not response_data:
+        print("Empty response data")
         print(details)
         return details
 
-    contents = response_data["list"]
+    contents = response_data
+    print("Contents:", contents)  # Debug: print the contents list
+
     for content in contents:
+        print("Processing content:", content)  # Debug: print each content item
+        
         if not folderPath:
             if not details['title']:
                 details['title'] = content['fileName']
-            folderPath = os.path.join(details['title'])
+            folderPath = details['title']
         else:
             folderPath = os.path.join(folderPath, content['fileName'])
             
         item = {
-            'url': content['fastDownloadLink'],
-            'filename': content['fileName'],
+            'url': content.get('fastDownloadLink', 'N/A'),  # Using get() to avoid KeyError
+            'filename': content.get('fileName', 'N/A'),
             'path': folderPath,
         }
-        if 'size' in content:
+        if 'fileSize' in content:
             size = content["fileSize"]
-            if isinstance(size, str) and size.isdigit():
+            if isinstance(size, str) and size.endswith(" GB"):
+                size = float(size.replace(" GB", "")) * 1024 * 1024 * 1024
+            elif isinstance(size, str) and size.endswith(" MB"):
+                size = float(size.replace(" MB", "")) * 1024 * 1024
+            elif isinstance(size, str) and size.isdigit():
                 size = float(size)
             details['total_size'] += size
         details['contents'].append(item)
