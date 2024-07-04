@@ -594,7 +594,7 @@ def terabox(link, folderPath='', details=None):
 
     retry_count = 3  # Number of retries
     while retry_count > 0:
-        response = requests.get(f'https://d-2-ee229a15793e.herokuapp.com/api.php?link={link}')
+        response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={link}')
         
         try:
             response_data = response.json()
