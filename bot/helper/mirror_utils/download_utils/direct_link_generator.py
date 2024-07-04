@@ -604,24 +604,24 @@ def terabox(link, folderPath='', details=None, max_retries=6):
         
         print("API Response:", response_data)  # Debug: print the full API response
         
-        if not response_data:
+        if not response_data or 'video' not in response_data:
             print("Empty response data")
             print(details)
             return details
         
-        # Check if response_data contains fastDownloadLink
-        if any('fastDownloadLink' in content for content in response_data):
-            break  # Exit the retry loop if fastDownloadLink is found
+        # Check if response_data contains 'video' key with a non-empty list
+        if any('video' in content for content in response_data['video']):
+            break  # Exit the retry loop if 'video' is found
         
         retry_count += 1
         print(f"Retry attempt {retry_count}/{max_retries}...")
         time.sleep(1)  # Add a short delay before retrying
     
     if retry_count == max_retries:
-        print(f"Reached maximum retries ({max_retries}). Unable to retrieve fastDownloadLink.")
+        print(f"Reached maximum retries ({max_retries}). Unable to retrieve video link.")
         return details
     
-    contents = response_data
+    contents = response_data['video']
     print("Contents:", contents)  # Debug: print the contents list
     
     for content in contents:
@@ -644,7 +644,7 @@ def terabox(link, folderPath='', details=None, max_retries=6):
     if len(details['contents']) == 1:
         return details['contents'][0]['url']
     return details
-
+    
 def gofile(url, auth):
     try:
         _password = sha256(auth[1].encode("utf-8")).hexdigest() if auth else ""
