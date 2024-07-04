@@ -594,7 +594,7 @@ def terabox(link, folderPath='', details=None, max_retries=6):
     retry_count = 0
     
     while retry_count < max_retries:
-        response = requests.get(f'https://d-2-ee229a15793e.herokuapp.com/api.php?link={link}')
+        response = requests.get(f'https://tera.instavideosave.com/?url={link}')
         
         try:
             response_data = response.json()
@@ -629,25 +629,16 @@ def terabox(link, folderPath='', details=None, max_retries=6):
         
         if not folderPath:
             if not details['title']:
-                details['title'] = content['fileName']
+                details['title'] = content['name']
             folderPath = details['title']
         else:
-            folderPath = os.path.join(folderPath, content['fileName'])
-            
+            folderPath = os.path.join(folderPath, content['name'])
+        
         item = {
-            'url': content.get('fastDownloadLink', 'N/A'),  # Using get() to avoid KeyError
-            'filename': content.get('fileName', 'N/A'),
+            'url': content.get('video', 'N/A'),  # Using get() to avoid KeyError
+            'filename': content.get('name', 'N/A'),
             'path': folderPath,
         }
-        if 'fileSize' in content:
-            size = content["fileSize"]
-            if isinstance(size, str) and size.endswith(" GB"):
-                size = float(size.replace(" GB", "")) * 1024 * 1024 * 1024
-            elif isinstance(size, str) and size.endswith(" MB"):
-                size = float(size.replace(" MB", "")) * 1024 * 1024
-            elif isinstance(size, str) and size.isdigit():
-                size = float(size)
-            details['total_size'] += size
         details['contents'].append(item)
     
     if len(details['contents']) == 1:
