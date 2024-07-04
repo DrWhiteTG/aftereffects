@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import requests, re, os
+import requests, re, os, time
 from threading import Thread
 from base64 import b64decode
 from json import loads
@@ -587,63 +587,66 @@ def uploadee(url):
 class DirectDownloadLinkException(Exception):
     pass
 
-async def get_formatted_size(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024:
-            return f"{size:.2f} {unit}"
-        size /= 1024
-    return f"{size:.2f} PB"
-  
+
 def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
 
-    response = requests.get(f'https://d-2-ee229a15793e.herokuapp.com/api.php?link={link}')
-    
-    try:
-        response_data = response.json()
-    except ValueError:
-        print("Error decoding JSON")
-        return details
-    
-    print("API Response:", response_data)  # Debug: print the full API response
-
-    if not response_data:
-        print("Empty response data")
-        print(details)
-        return details
-
-    contents = response_data
-    print("Contents:", contents)  # Debug: print the contents list
-
-    for content in contents:
-        print("Processing content:", content)  # Debug: print each content item
+    retry_count = 3  # Number of retries
+    while retry_count > 0:
+        response = requests.get(f'https://d-2-ee229a15793e.herokuapp.com/api.php?link={link}')
         
-        if not folderPath:
-            if not details['title']:
-                details['title'] = content['fileName']
-            folderPath = details['title']
-        else:
-            folderPath = os.path.join(folderPath, content['fileName'])
-            
-        item = {
-            'url': content.get('fastDownloadLink', 'N/A'),  # Using get() to avoid KeyError
-            'filename': content.get('fileName', 'N/A'),
-            'path': folderPath,
-        }
-        if 'fileSize' in content:
-            size = content["fileSize"]
-            if isinstance(size, str) and size.endswith(" GB"):
-                size = float(size.replace(" GB", "")) * 1024 * 1024 * 1024
-            elif isinstance(size, str) and size.endswith(" MB"):
-                size = float(size.replace(" MB", "")) * 1024 * 1024
-            elif isinstance(size, str) and size.isdigit():
-                size = float(size)
-            details['total_size'] += size
-        details['contents'].append(item)
+        try:
+            response_data = response.json()
+        except ValueError:
+            print("Error decoding JSON")
+            return details
+        
+        print("API Response:", response_data)  # Debug: print the full API response
 
-    if len(details['contents']) == 1:
-        return details['contents'][0]['url']
+        if not response_data:
+            print("Empty response data")
+            print(details)
+            return details
+
+        contents = response_data
+        print("Contents:", contents)  # Debug: print the contents list
+
+        for content in contents:
+            print("Processing content:", content)  # Debug: print each content item
+            
+            if not folderPath:
+                if not details['title']:
+                    details['title'] = content['fileName']
+                folderPath = details['title']
+            else:
+                folderPath = os.path.join(folderPath, content['fileName'])
+                
+            item = {
+                'url': content.get('fastDownloadLink', 'N/A'),  # Using get() to avoid KeyError
+                'filename': content.get('fileName', 'N/A'),
+                'path': folderPath,
+            }
+            if 'fileSize' in content:
+                size = content["fileSize"]
+                if isinstance(size, str) and size.endswith(" GB"):
+                    size = float(size.replace(" GB", "")) * 1024 * 1024 * 1024
+                elif isinstance(size, str) and size.endswith(" MB"):
+                    size = float(size.replace(" MB", "")) * 1024 * 1024
+                elif isinstance(size, str) and size.isdigit():
+                    size = float(size)
+                details['total_size'] += size
+            details['contents'].append(item)
+            
+            if item['url'] != 'N/A':
+                # Found a valid download link, break out of the loop
+                return details
+
+        retry_count -= 1
+        print(f"Retrying... {retry_count} attempts left.")
+        time.sleep(1)  # Add a small delay before retrying to avoid hitting API limits or flooding requests
+
+    print("No valid download link found after retries.")
     return details
 
 def gofile(url, auth):
