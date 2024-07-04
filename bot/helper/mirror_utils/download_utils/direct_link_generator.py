@@ -594,12 +594,19 @@ def terabox(link, folderPath='', details=None, max_retries=6):
     retry_count = 0
     
     while retry_count < max_retries:
-        response = requests.get(f'https://tera.instavideosave.com/?url={link}')
-        
         try:
+            response = requests.get(f'https://tera.instavideosave.com/?url={link}')
+            response.raise_for_status()  # Ensure the request was successful
             response_data = response.json()
+        except requests.RequestException as e:
+            print(f"Request failed: {e}")
+            retry_count += 1
+            print(f"Retry attempt {retry_count}/{max_retries}...")
+            time.sleep(1)  # Add a short delay before retrying
+            continue
         except ValueError:
             print("Error decoding JSON")
+            print("Response text:", response.text)  # Log the response text for debugging
             return details
         
         print("API Response:", response_data)  # Debug: print the full API response
@@ -610,7 +617,7 @@ def terabox(link, folderPath='', details=None, max_retries=6):
             return details
         
         # Check if response_data contains 'video' key with a non-empty list
-        if any('video' in content for content in response_data['video']):
+        if response_data['video']:
             break  # Exit the retry loop if 'video' is found
         
         retry_count += 1
