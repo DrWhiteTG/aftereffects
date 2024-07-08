@@ -3,7 +3,7 @@ class WZMLStyle:
     # ----------------------
     # async def start(client, message) ---> __main__.py
     ST_BN1_NAME = 'Buy Paid ✅'
-    ST_BN1_URL = 'https://t.me/telebotssupport_bot'
+    ST_BN1_URL = 'https://t.me/mrwhitepy_bot'
     ST_BN2_NAME = 'Use Free 📥'
     ST_BN2_URL = 'https://t.me/+pRdXtCp_fN9lZjll'
     ST_MSG = '''<b><i>Download terabox video directly from terabox link to telegram</b></i>
