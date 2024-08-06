@@ -594,7 +594,7 @@ def terabox(link, folderPath='', details=None, max_retries=6):
     retry_count = 0
     
     while retry_count < max_retries:
-        response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={link}')
+        response = requests.get(f'https://api-9l3l.onrender.com/api.php?link={link}')
         
         try:
             response_data = response.json()
