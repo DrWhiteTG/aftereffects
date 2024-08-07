@@ -587,71 +587,112 @@ def uploadee(url):
 class DirectDownloadLinkException(Exception):
     pass
 
-def terabox(link, folderPath='', details=None, max_retries=6):
+def find_between(s, start, end):
+    """Finds a substring between 'start' and 'end'."""
+    try:
+        start_idx = s.index(start) + len(start)
+        end_idx = s.index(end, start_idx)
+        return s[start_idx:end_idx]
+    except ValueError:
+        return ""
+
+def get_formatted_size(size_in_bytes):
+    """Formats bytes into a readable string."""
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_in_bytes < 1024:
+            return f"{size_in_bytes:.2f} {unit}"
+        size_in_bytes /= 1024
+    return f"{size_in_bytes:.2f} TB"
+
+def get_data(url: str):
+    netloc = urlparse(url).netloc
+    url = url.replace(netloc, "1024terabox.com")
+    response = requests.get(url, data="")
+
+    if not response.status_code == 200:
+        return False
+
+    default_thumbnail = find_between(response.text, 'og:image" content="', '"')
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Content-Type": "application/json",
+        "Origin": "https://ytshorts.savetube.me",
+        "Alt-Used": "ytshorts.savetube.me",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+    }
+
+    response = requests.post(
+        "https://ytshorts.savetube.me/api/v1/terabox-downloader",
+        headers=headers,
+        json={"url": url},
+    )
+
+    if response.status_code != 200:
+        return False
+
+    response = response.json()
+    responses = response.get("response", [])
+    if not responses:
+        return False
+
+    resolutions = responses[0].get("resolutions", {})
+    if not resolutions:
+        return False
+
+    download = resolutions.get("Fast Download", "")
+    video = resolutions.get("HD Video", "")
+
+    response = requests.head(video)
+    content_length = response.headers.get("Content-Length", 0)
+    content_length = int(content_length) if content_length else None
+
+    idk = response.headers.get("content-disposition")
+    fname = re.findall('filename="(.+)"', idk) if idk else None
+
+    response = requests.head(download)
+    direct_link = response.headers.get("location")
+
+    data = {
+        "title": fname[0] if fname else None,
+        "fastDownloadLink": video if video else None,
+        "direct_link": direct_link if direct_link else download,
+        "thumb": default_thumbnail if default_thumbnail else None,
+        "filesize": get_formatted_size(content_length) if content_length else None,
+        "sizebytes": content_length,
+    }
+    return data
+
+def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
-    
-    retry_count = 0
-    
-    while retry_count < max_retries:
-        response = requests.get(f'https://api-9l3l.onrender.com/api.php?link={link}')
-        
-        try:
-            response_data = response.json()
-        except ValueError:
-            print("Error decoding JSON")
-            return details
-        
-        print("API Response:", response_data)  # Debug: print the full API response
-        
-        if not response_data:
-            print("Empty response data")
-            print(details)
-            return details
-        
-        # Check if response_data contains fastDownloadLink
-        if any('fastDownloadLink' in content for content in response_data):
-            break  # Exit the retry loop if fastDownloadLink is found
-        
-        retry_count += 1
-        print(f"Retry attempt {retry_count}/{max_retries}...")
-        time.sleep(1)  # Add a short delay before retrying
-    
-    if retry_count == max_retries:
-        print(f"Reached maximum retries ({max_retries}). Unable to retrieve fastDownloadLink.")
+
+    # Fetch data using the new API
+    data = get_data(link)
+    if not data or not data.get("fastDownloadLink"):
+        print("Failed to retrieve data using new API")
         return details
     
-    contents = response_data
-    print("Contents:", contents)  # Debug: print the contents list
-    
-    for content in contents:
-        print("Processing content:", content)  # Debug: print each content item
-        
-        if not folderPath:
-            if not details['title']:
-                details['title'] = content['fileName']
-            folderPath = details['title']
-        else:
-            folderPath = os.path.join(folderPath, content['fileName'])
-            
-        item = {
-            'url': content.get('fastDownloadLink', 'N/A'),  # Using get() to avoid KeyError
-            'filename': content.get('fileName', 'N/A'),
-            'path': folderPath,
-        }
-        if 'fileSize' in content:
-            size = content["fileSize"]
-            if isinstance(size, str) and size.endswith(" GB"):
-                size = float(size.replace(" GB", "")) * 1024 * 1024 * 1024
-            elif isinstance(size, str) and size.endswith(" MB"):
-                size = float(size.replace(" MB", "")) * 1024 * 1024
-            elif isinstance(size, str) and size.isdigit():
-                size = float(size)
-            details['total_size'] += size
-        details['contents'].append(item)
-    
+    # Update the details with the new data
+    details['title'] = data.get('title', details['title'])
+    folderPath = details['title'] if not folderPath else folderPath
+
+    item = {
+        'url': data.get('fastDownloadLink', 'N/A'),
+        'filename': details['title'],
+        'path': folderPath,
+    }
+
+    details['total_size'] += data.get('sizebytes', 0)
+    details['contents'].append(item)
+
     if len(details['contents']) == 1:
         return details['contents'][0]['url']
+    
     return details
 
 def gofile(url, auth):
