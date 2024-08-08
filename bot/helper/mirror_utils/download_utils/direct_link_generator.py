@@ -587,72 +587,76 @@ def uploadee(url):
 class DirectDownloadLinkException(Exception):
     pass
 
-def terabox(link, folderPath='', details=None, max_retries=6):
+def convert_size(size_str):
+    if size_str.endswith(" GB"):
+        return float(size_str.replace(" GB", "")) * 1024 * 1024 * 1024
+    elif size_str.endswith(" MB"):
+        return float(size_str.replace(" MB", "")) * 1024 * 1024
+    elif size_str.isdigit():
+        return float(size_str)
+    return 0
+
+def replace_domain(url):
+    if url.startswith("http://d.terabox.app") or url.startswith("https://d.terabox.app"):
+        return url.replace("d.terabox.app", "d8.freeterabox.com")
+    return url
+
+def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
     
-    retry_count = 0
+    try:
+        response = requests.get(f'https://api-9l3l.onrender.com/api.php?link={link}')
+        response.raise_for_status()  # Ensure we catch HTTP errors
+        response_data = response.json()
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
+        return details
+    except ValueError:
+        print("Error decoding JSON")
+        return details
     
-    while retry_count < max_retries:
-        response = requests.get(f'https://pndz.000webhostapp.com/api.php?link={link}')
-        
-        try:
-            response_data = response.json()
-        except ValueError:
-            print("Error decoding JSON")
-            return details
-        
-        print("API Response:", response_data)  # Debug: print the full API response
-        
-        if not response_data:
-            print("Empty response data")
-            print(details)
-            return details
-        
-        # Check if response_data contains fastDownloadLink
-        if any('fastDownloadLink' in content for content in response_data):
-            break  # Exit the retry loop if fastDownloadLink is found
-        
-        retry_count += 1
-        print(f"Retry attempt {retry_count}/{max_retries}...")
-        time.sleep(1)  # Add a short delay before retrying
+    print("API Response:", response_data)  # Debug
     
-    if retry_count == max_retries:
-        print(f"Reached maximum retries ({max_retries}). Unable to retrieve fastDownloadLink.")
+    if not isinstance(response_data, list) or not response_data:
+        print("Empty or invalid response data")
+        print(details)
+        return details
+    
+    # Check if response_data contains downloadLink
+    if not any('downloadLink' in content for content in response_data):
+        print("No downloadLink found in response data")
         return details
     
     contents = response_data
-    print("Contents:", contents)  # Debug: print the contents list
+    print("Contents:", contents)  # Debug
     
     for content in contents:
-        print("Processing content:", content)  # Debug: print each content item
+        print("Processing content:", content)  # Debug
         
         if not folderPath:
             if not details['title']:
-                details['title'] = content['fileName']
+                details['title'] = content.get('fileName', 'Unknown Title')
             folderPath = details['title']
         else:
-            folderPath = os.path.join(folderPath, content['fileName'])
-            
+            folderPath = os.path.join(folderPath, content.get('fileName', 'Unknown File'))
+        
+        original_url = content.get('downloadLink', 'N/A')
         item = {
-            'url': content.get('fastDownloadLink', 'N/A'),  # Using get() to avoid KeyError
+            'url': replace_domain(original_url),
             'filename': content.get('fileName', 'N/A'),
             'path': folderPath,
         }
-        if 'fileSize' in content:
-            size = content["fileSize"]
-            if isinstance(size, str) and size.endswith(" GB"):
-                size = float(size.replace(" GB", "")) * 1024 * 1024 * 1024
-            elif isinstance(size, str) and size.endswith(" MB"):
-                size = float(size.replace(" MB", "")) * 1024 * 1024
-            elif isinstance(size, str) and size.isdigit():
-                size = float(size)
-            details['total_size'] += size
+        
+        size_str = content.get('fileSize', '0')
+        size = convert_size(size_str)
+        details['total_size'] += size
         details['contents'].append(item)
     
     if len(details['contents']) == 1:
         return details['contents'][0]['url']
     return details
+
 
 def gofile(url, auth):
     try:
