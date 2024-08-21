@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os.path as ospath
 import requests, re, os, time
 from threading import Thread
 from base64 import b64decode
