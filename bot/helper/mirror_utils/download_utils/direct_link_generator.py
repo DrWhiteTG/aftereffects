@@ -660,7 +660,7 @@ def terabox(url):
         zlink = resolutions.get("HD Video")
         if zlink:
             details["contents"].append({
-                "url": replace_domain(zlink),
+                "url": zlink,
                 "filename": title,
                 "path": ospath.join(
                     title,
@@ -672,8 +672,6 @@ def terabox(url):
     if len(details["contents"]) == 1:
         return details["contents"][0]["url"]
     return details
-
-
 
 def gofile(url, auth):
     try:
