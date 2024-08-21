@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os.path as ospath
 import requests, re, os, time
 from threading import Thread
 from base64 import b64decode
@@ -602,77 +601,62 @@ def replace_domain(url):
         return url.replace("d.terabox.app", "d8.freeterabox.com")
     return url
 
-def terabox(url):
-    """Terabox direct link generator
-    By: https://github.com/Dawn-India/Z-Mirror"""
-
-    pattern1 = r"/s/(\w+)"
-    pattern2 = r"surl=(\w+)"
-
-    if not (
-        search(
-            pattern1,
-            url
-        ) or search(
-            pattern2,
-            url
-        )
-    ):
-        raise DirectDownloadLinkException("ERROR: Invalid terabox URL")
-
-    netloc = urlparse(url).netloc
-    url = url.replace(
-        netloc,
-        "1024tera.com"
-    )
-    response = get(url)
-    if response.status_code != 200:
-        raise DirectDownloadLinkException("ERROR: Unable to fetch the webpage")
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Content-Type": "application/json",
-        "Origin": "https://ytshorts.savetube.me",
-        "Alt-Used": "ytshorts.savetube.me",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin"
-    }
-
-    response = post(
-        "https://ytshorts.savetube.me/api/v1/terabox-downloader",
-        headers=headers,
-        json={"url": url}
-    )
-    if response.status_code != 200:
-        raise DirectDownloadLinkException("ERROR: Unable to fetch the JSON data")
-
-    data = response.json()
-    details = {"contents": [], "title": "", "total_size": 0}
-
-    for item in data["response"]:
-        title = item["title"]
-        resolutions = item.get(
-            "resolutions",
-            {}
-        )
-        zlink = resolutions.get("HD Video")
-        if zlink:
-            details["contents"].append({
-                "url": zlink,
-                "filename": title,
-                "path": ospath.join(
-                    title,
-                    "HD_Video"
-                )
-            })
-        details["title"] = title
-
-    if len(details["contents"]) == 1:
-        return details["contents"][0]["url"]
+def terabox(link, folderPath='', details=None):
+    if details is None:
+        details = {'title': '', 'total_size': 0, 'contents': []}
+    
+    try:
+        response = requests.get(f'https://api-9l3l.onrender.com/api.php?link={link}')
+        response.raise_for_status()  # Ensure we catch HTTP errors
+        response_data = response.json()
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
+        return details
+    except ValueError:
+        print("Error decoding JSON")
+        return details
+    
+    print("API Response:", response_data)  # Debug
+    
+    if not isinstance(response_data, list) or not response_data:
+        print("Empty or invalid response data")
+        print(details)
+        return details
+    
+    # Check if response_data contains downloadLink
+    if not any('downloadLink' in content for content in response_data):
+        print("No downloadLink found in response data")
+        return details
+    
+    contents = response_data
+    print("Contents:", contents)  # Debug
+    
+    for content in contents:
+        print("Processing content:", content)  # Debug
+        
+        if not folderPath:
+            if not details['title']:
+                details['title'] = content.get('fileName', 'Unknown Title')
+            folderPath = details['title']
+        else:
+            folderPath = os.path.join(folderPath, content.get('fileName', 'Unknown File'))
+        
+        original_url = content.get('downloadLink', 'N/A')
+        item = {
+            'url': replace_domain(original_url),
+            'filename': content.get('fileName', 'N/A'),
+            'path': folderPath,
+        }
+        
+        size_str = content.get('fileSize', '0')
+        size = convert_size(size_str)
+        details['total_size'] += size
+        details['contents'].append(item)
+    
+    if len(details['contents']) == 1:
+        return details['contents'][0]['url']
     return details
+
 
 def gofile(url, auth):
     try:
