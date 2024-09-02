@@ -596,10 +596,10 @@ def convert_size(size_str):
         return float(size_str)
     return 0
 
-def replace_domain(url):
-    if url.startswith("http://d.terabox.app") or url.startswith("https://d.terabox.app"):
-        return url.replace("d.terabox.app", "d8.freeterabox.com")
-    return url
+# def replace_domain(url):
+#     if url.startswith("http://d.terabox.app") or url.startswith("https://d.terabox.app"):
+#         return url.replace("d.terabox.app", "d8.freeterabox.com")
+#     return url
 
 def terabox(link, folderPath='', details=None):
     if details is None:
@@ -624,7 +624,7 @@ def terabox(link, folderPath='', details=None):
         return details
     
     # Check if response_data contains downloadLink
-    if not any('downloadLink' in content for content in response_data):
+    if not any('fastDownloadLink' in content for content in response_data):
         print("No downloadLink found in response data")
         return details
     
@@ -641,9 +641,9 @@ def terabox(link, folderPath='', details=None):
         else:
             folderPath = os.path.join(folderPath, content.get('fileName', 'Unknown File'))
         
-        original_url = content.get('downloadLink', 'N/A')
+        original_url = content.get('fastDownloadLink', 'N/A')
         item = {
-            'url': replace_domain(original_url),
+            'url': original_url,
             'filename': content.get('fileName', 'N/A'),
             'path': folderPath,
         }
