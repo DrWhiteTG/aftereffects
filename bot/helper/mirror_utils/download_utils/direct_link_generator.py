@@ -617,38 +617,36 @@ def terabox(link, folderPath='', details=None):
         return details
     
     print("API Response:", response_data)  # Debug
-    
-    if not isinstance(response_data, list) or not response_data:
+
+    # Check if response contains the 'response' key and it's a list
+    contents = response_data.get('response', [])
+    if not isinstance(contents, list) or not contents:
         print("Empty or invalid response data")
-        print(details)
         return details
     
-    # Check if response_data contains downloadLink
-    if not any('Mirror Link' in content for content in response_data):
-        print("No downloadLink found in response data")
-        return details
-    
-    contents = response_data
     print("Contents:", contents)  # Debug
     
     for content in contents:
         print("Processing content:", content)  # Debug
+
+        if not details['title']:
+            details['title'] = content.get('title', 'Unknown Title')
         
         if not folderPath:
-            if not details['title']:
-                details['title'] = content.get('fileName', 'Unknown Title')
             folderPath = details['title']
         else:
-            folderPath = os.path.join(folderPath, content.get('fileName', 'Unknown File'))
-        
-        original_url = content.get('Mirror Link', 'N/A')
+            folderPath = os.path.join(folderPath, content.get('title', 'Unknown File'))
+
+        # Extract the desired download link, e.g., "Mirror Link"
+        original_url = content.get('resolutions', {}).get('Mirror Link', 'N/A')
         item = {
             'url': original_url,
-            'filename': content.get('fileName', 'N/A'),
+            'filename': content.get('title', 'N/A'),
             'path': folderPath,
         }
         
-        size_str = content.get('fileSize', '0')
+        # Assuming fileSize is in the same content dict
+        size_str = content.get('resolutions', {}).get('fileSize', '0')
         size = convert_size(size_str)
         details['total_size'] += size
         details['contents'].append(item)
