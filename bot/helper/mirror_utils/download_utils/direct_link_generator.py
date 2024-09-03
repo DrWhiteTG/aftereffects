@@ -624,7 +624,7 @@ def terabox(link, folderPath='', details=None):
         return details
     
     # Check if response_data contains downloadLink
-    if not any('fastDownloadLink' in content for content in response_data):
+    if not any('Mirror Link' in content for content in response_data):
         print("No downloadLink found in response data")
         return details
     
