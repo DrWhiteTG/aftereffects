@@ -596,17 +596,17 @@ def convert_size(size_str):
         return float(size_str)
     return 0
 
-# def replace_domain(url):
-#     if url.startswith("http://d.terabox.app") or url.startswith("https://d.terabox.app"):
-#         return url.replace("d.terabox.app", "d8.freeterabox.com")
-#     return url
+def replace_domain(url):
+    if url.startswith("http://data.terabox.app") or url.startswith("https://d3.terabox.app"):
+        return url.replace("d.terabox.app", "d8.freeterabox.com")
+    return url
 
 def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
     
     try:
-        response = requests.get(f'https://api-9l3l.onrender.com/api.php?link={link}')
+        response = requests.get(f'https://teraboxvideodownloader.nepcoderdevs.workers.dev/?url={link}')
         response.raise_for_status()  # Ensure we catch HTTP errors
         response_data = response.json()
     except requests.RequestException as e:
@@ -641,9 +641,9 @@ def terabox(link, folderPath='', details=None):
         else:
             folderPath = os.path.join(folderPath, content.get('fileName', 'Unknown File'))
         
-        original_url = content.get('fastDownloadLink', 'N/A')
+        original_url = content.get('Mirror Link', 'N/A')
         item = {
-            'url': original_url,
+            'url': replace_domain(onriginal_url),
             'filename': content.get('fileName', 'N/A'),
             'path': folderPath,
         }
