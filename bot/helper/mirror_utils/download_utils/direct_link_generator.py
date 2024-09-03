@@ -643,7 +643,7 @@ def terabox(link, folderPath='', details=None):
         
         original_url = content.get('Mirror Link', 'N/A')
         item = {
-            'url': replace_domain(onriginal_url),
+            'url': replace_domain(original_url),
             'filename': content.get('fileName', 'N/A'),
             'path': folderPath,
         }
