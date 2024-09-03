@@ -596,10 +596,10 @@ def convert_size(size_str):
         return float(size_str)
     return 0
 
-def replace_domain(url):
-    if url.startswith("http://data.terabox.app") or url.startswith("https://d3.terabox.app"):
-        return url.replace("d.terabox.app", "d8.freeterabox.com")
-    return url
+# def replace_domain(url):
+#     if url.startswith("http://data.terabox.app") or url.startswith("https://d3.terabox.app"):
+#         return url.replace("d.terabox.app", "d8.freeterabox.com")
+#     return url
 
 def terabox(link, folderPath='', details=None):
     if details is None:
@@ -643,7 +643,7 @@ def terabox(link, folderPath='', details=None):
         
         original_url = content.get('Mirror Link', 'N/A')
         item = {
-            'url': replace_domain(original_url),
+            'url': original_url,
             'filename': content.get('fileName', 'N/A'),
             'path': folderPath,
         }
