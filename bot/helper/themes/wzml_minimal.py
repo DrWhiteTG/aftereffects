@@ -5,7 +5,7 @@ class WZMLStyle:
     ST_BN1_NAME = 'Buy Paid ✅'
     ST_BN1_URL = 'https://t.me/mrwhitepy_bot'
     ST_BN2_NAME = 'Use Free 📥'
-    ST_BN2_URL = 'https://t.me/+pRdXtCp_fN9lZjll'
+    ST_BN2_URL = 'https://t.me/+2g61WJKvJmg1ZTZl'
     ST_MSG = '''<b><i>Download terabox video directly from terabox link to telegram</b></i>
 <b>We have two bots, one is free and another is paid, Piad do not have any limitations but free bot do have some.</b>'''
     ST_BOTPM = '''<i>Now, This bot will send all your files and links here. Start Using ...</i>'''
