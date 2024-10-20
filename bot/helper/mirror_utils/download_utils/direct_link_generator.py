@@ -596,17 +596,12 @@ def convert_size(size_str):
         return float(size_str)
     return 0
 
-# def replace_domain(url):
-#     if url.startswith("http://data.terabox.app") or url.startswith("https://d3.terabox.app"):
-#         return url.replace("d.terabox.app", "d8.freeterabox.com")
-#     return url
-
 def terabox(link, folderPath='', details=None):
     if details is None:
         details = {'title': '', 'total_size': 0, 'contents': []}
     
     try:
-        response = requests.get(f'https://teraboxvideodownloader.nepcoderdevs.workers.dev/?url={link}')
+        response = requests.get(f'https://viper.xasena.me/api/terabox?url={link}')
         response.raise_for_status()  # Ensure we catch HTTP errors
         response_data = response.json()
     except requests.RequestException as e:
@@ -618,43 +613,44 @@ def terabox(link, folderPath='', details=None):
     
     print("API Response:", response_data)  # Debug
 
-    # Check if response contains the 'response' key and it's a list
-    contents = response_data.get('response', [])
-    if not isinstance(contents, list) or not contents:
-        print("Empty or invalid response data")
+    # Check if response is successful
+    if not response_data.get('status'):
+        print("Error: API returned an unsuccessful status")
         return details
     
-    print("Contents:", contents)  # Debug
+    file_info = response_data.get('data', {})
+    if not file_info:
+        print("No data found in the response")
+        return details
     
-    for content in contents:
-        print("Processing content:", content)  # Debug
+    print("File Info:", file_info)  # Debug
 
-        if not details['title']:
-            details['title'] = content.get('title', 'Unknown Title')
-        
-        if not folderPath:
-            folderPath = details['title']
-        else:
-            folderPath = os.path.join(folderPath, content.get('title', 'Unknown File'))
+    if not details['title']:
+        details['title'] = file_info.get('file_name', 'Unknown Title')
+    
+    if not folderPath:
+        folderPath = details['title']
+    else:
+        folderPath = os.path.join(folderPath, details['title'])
 
-        # Extract the desired download link, e.g., "Mirror Link"
-        original_url = content.get('resolutions', {}).get('Mirror Link', 'N/A')
-        item = {
-            'url': original_url,
-            'filename': content.get('title', 'N/A'),
-            'path': folderPath,
-        }
-        
-        # Assuming fileSize is in the same content dict
-        size_str = content.get('resolutions', {}).get('fileSize', '0')
-        size = convert_size(size_str)
-        details['total_size'] += size
-        details['contents'].append(item)
+    # Extract the download URL
+    download_url = file_info.get('downloadUrl', 'N/A')
+    item = {
+        'url': download_url,
+        'filename': file_info.get('file_name', 'N/A'),
+        'path': folderPath,
+    }
+    
+    # Extract file size
+    file_size_str = file_info.get('size', '0')
+    size = convert_size(file_size_str)
+    details['total_size'] += size
+    details['contents'].append(item)
     
     if len(details['contents']) == 1:
         return details['contents'][0]['url']
+    
     return details
-
 
 def gofile(url, auth):
     try:
